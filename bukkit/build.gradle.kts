@@ -7,14 +7,20 @@ plugins {
 dependencies {
     paperweight.paperDevBundle("1.21.11-R0.1-SNAPSHOT")
 
-    implementation("io.nexstudios:framework-paper:v1.0.2")
-    implementation("io.nexstudios.itemservice:bukkit:v1.0.0")
-    implementation("io.nexstudios.menuservice:bukkit:v1.0.1")
-    implementation("io.nexstudios.configservice:platform:v1.0.0")
-    implementation("io.nexstudios.languageservice:bukkit:v1.0.0")
-    implementation("io.nexstudios.commandservice:bukkit:v1.0.0")
+    compileOnly("io.nexstudios:framework-paper:v1.0.2")
+    compileOnly("io.nexstudios.itemservice:bukkit:v1.0.0")
+    compileOnly("io.nexstudios.menuservice:bukkit:v1.0.1")
+    compileOnly("io.nexstudios.configservice:platform:v1.0.0")
+    compileOnly("io.nexstudios.languageservice:bukkit:v1.0.0")
+    compileOnly("io.nexstudios.commandservice:bukkit:v1.0.0")
+
+    compileOnly("io.nexstudios.nexlogic:nexlogic-bukkit:v1.0.0")
 
 }
+tasks.jar {
+    enabled = false
+}
+
 
 tasks.processResources {
     filteringCharset = "UTF-8"
@@ -22,9 +28,8 @@ tasks.processResources {
 
 tasks.shadowJar {
     archiveClassifier.set("")
+    archiveBaseName.set("NexRegen")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    relocate("org.yaml.snakeyaml", "io.nexstudios.nexlogic.libs.snakeyaml")
 }
 
 tasks.build {
