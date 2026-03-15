@@ -1,6 +1,0 @@
-language: english
-logging:
-  debug:
-    enable: false
-    level: 3
-

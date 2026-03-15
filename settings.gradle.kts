@@ -1,2 +1,2 @@
 rootProject.name = "NexRegen"
-include("core")
+include("bukkit")
