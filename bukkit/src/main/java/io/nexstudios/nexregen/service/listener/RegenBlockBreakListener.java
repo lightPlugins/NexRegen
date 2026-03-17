@@ -9,9 +9,7 @@ import io.nexstudios.nexregen.service.util.BlockDataSpec;
 import io.nexstudios.nexregen.service.util.RegenTimeParser;
 import io.nexstudios.serviceregistry.di.Dependencies;
 import io.nexstudios.serviceregistry.di.ServiceAccessor;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
@@ -20,7 +18,6 @@ import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import io.nexstudios.nexregen.service.util.BlockKey;
-import org.bukkit.World;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -59,6 +56,8 @@ public final class RegenBlockBreakListener implements Listener {
   public void onDamage(BlockDamageEvent event) {
     Block block = event.getBlock();
     Player player = event.getPlayer();
+
+    if(player.getGameMode().equals(GameMode.CREATIVE)) { return; }
 
     boolean allowed = true;
 
@@ -154,6 +153,9 @@ public final class RegenBlockBreakListener implements Listener {
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
   public void onBreakPre(BlockBreakEvent event) {
+
+    if(event.getPlayer().getGameMode().equals(GameMode.CREATIVE)) { return; }
+
     if (regen.isInternalBreak(event.getBlock())) {
       return;
     }
@@ -177,6 +179,8 @@ public final class RegenBlockBreakListener implements Listener {
   public void onBreak(BlockBreakEvent event) {
     Block block = event.getBlock();
     Player player = event.getPlayer();
+
+    if(player.getGameMode().equals(GameMode.CREATIVE)) { return; }
 
     if (regen.isInternalBreak(block)) {
       return;
@@ -302,6 +306,7 @@ public final class RegenBlockBreakListener implements Listener {
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
   public void onInteract(PlayerInteractEvent event) {
+    if(event.getPlayer().getGameMode().equals(GameMode.CREATIVE)) { return; }
     if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
     Block clicked = event.getClickedBlock();
