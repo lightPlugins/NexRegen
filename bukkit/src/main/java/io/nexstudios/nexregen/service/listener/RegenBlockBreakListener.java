@@ -220,6 +220,7 @@ public final class RegenBlockBreakListener implements Listener {
           continue;
         }
 
+        @SuppressWarnings("UnstableApiUsage")
         BlockBreakEvent synthetic = new BlockBreakEvent(b, player);
         synthetic.setDropItems(false);
         synthetic.setExpToDrop(0);
