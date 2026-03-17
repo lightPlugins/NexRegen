@@ -2,6 +2,8 @@ package io.nexstudios.nexregen.service.util;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
 
@@ -19,7 +21,23 @@ public final class BlockDataSpec {
     String s = normalize(input);
     int bracket = s.indexOf('[');
     String matPart = (bracket >= 0) ? s.substring(0, bracket) : s;
-    Material m = Material.matchMaterial(matPart, true);
+
+    Material m = null;
+
+    NamespacedKey key = NamespacedKey.fromString(matPart);
+    if (key != null) {
+      m = Registry.MATERIAL.get(key);
+    }
+
+    if (m == null) {
+      m = Material.matchMaterial(matPart, true);
+    }
+
+    if (m == null && matPart.contains(":")) {
+      String withoutNamespace = matPart.substring(matPart.indexOf(':') + 1);
+      m = Material.matchMaterial(withoutNamespace, true);
+    }
+
     return Optional.ofNullable(m);
   }
 

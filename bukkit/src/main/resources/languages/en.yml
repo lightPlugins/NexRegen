@@ -1,0 +1,3 @@
+general:
+  reload: '<gray>Successfully reloaded the config!'
+  reload-failed: '<red>Failed to reload the config!'

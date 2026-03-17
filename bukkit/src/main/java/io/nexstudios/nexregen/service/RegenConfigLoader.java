@@ -59,16 +59,16 @@ public final class RegenConfigLoader implements Service {
 
     ConfigurationSection settingsSec = sec.getSection("settings");
     RegenSettings settings = new RegenSettings(
-        settingsSec != null && settingsSec.getBoolean("apply-physics", false),
         settingsSec != null && settingsSec.getBoolean("drop-items", false),
-        settingsSec != null && settingsSec.getBoolean("drop-xp", false)
+        settingsSec != null && settingsSec.getBoolean("drop-xp", false),
+        settingsSec != null && settingsSec.getBoolean("replace-only-bottom", false)
     );
 
     ConfigurationSection repl = sec.getSection("replacement");
     String replacementSpecRaw = repl != null ? repl.getString("block", blockSpecRaw) : blockSpecRaw;
     OptionalInt replacementAge = repl != null ? optionalInt(repl, "age") : OptionalInt.empty();
 
-    // IMPORTANT: age in specs is ignored; age only comes from separate fields.
+    // age in specs is ignored; age only comes from separate fields.
     String finalSpecNoAge = BlockDataSpec.normalize(blockSpecRaw);       // normalized but may still contain age in brackets
     String replacementSpecNoAge = BlockDataSpec.normalize(replacementSpecRaw);
 

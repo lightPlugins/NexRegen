@@ -5,7 +5,7 @@ plugins {
 
 allprojects {
     group = "io.nexstudios.nexregen"
-    version = "0.1.0-SNAPSHOT"
+    version = "v1.0.0"
 
     repositories {
         mavenLocal()

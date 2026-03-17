@@ -1,14 +1,17 @@
 package io.nexstudios.nexregen;
 
 import io.nexstudios.commandservice.CommandServiceModule;
+import io.nexstudios.commandservice.service.commands.CommandService;
 import io.nexstudios.configservice.ConfigServiceModule;
 import io.nexstudios.framework.paper.NexPaperPlugin;
 import io.nexstudios.itemservice.bukkit.ItemServiceModule;
 import io.nexstudios.languageservice.LanguageServiceModule;
+import io.nexstudios.languageservice.service.language.LanguageService;
 import io.nexstudios.menuservice.bukkit.service.menu.MenuServiceModule;
 import io.nexstudios.nexlogic.bukkit.NexLogicPlugin;
 import io.nexstudios.nexlogic.bukkit.services.effects.logging.BukkitLoggerService;
 import io.nexstudios.nexlogic.common.services.logging.LoggerService;
+import io.nexstudios.nexregen.command.RegenReloadCommand;
 import io.nexstudios.nexregen.service.NexLogicConditionFacade;
 import io.nexstudios.nexregen.service.RegenConfigLoader;
 import io.nexstudios.nexregen.service.RegenManager;
@@ -59,6 +62,9 @@ public class NexRegenPlugin extends NexPaperPlugin {
   protected void start() {
     initNexLogic();
 
+    // init language files
+    services().getService(LanguageService.class).reload();
+
     RegenConfigLoader loader = new RegenConfigLoader(services());
     services().register(RegenConfigLoader.class, loader);
     NexLogicConditionFacade conditionFacade = new NexLogicConditionFacade(nexLogicService);
@@ -69,14 +75,18 @@ public class NexRegenPlugin extends NexPaperPlugin {
     PluginManager pm = Bukkit.getPluginManager();
     pm.registerEvents(new RegenBlockBreakListener(services()), this);
 
+    // register commands
+    services().getService(CommandService.class).registerAll(
+        List.of(
+            RegenReloadCommand.class
+        )
+    );
+
     getLogger().info("NexRegen started.");
   }
 
   @Override
   protected void stop() {
-    if (this.regenManager != null) {
-      this.regenManager.forceCompleteAllPendingOnShutdown();
-    }
     getLogger().info("NexRegen stopped.");
   }
 
