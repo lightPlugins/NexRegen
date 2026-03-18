@@ -47,10 +47,10 @@ public final class RegenReloadCommand implements Service {
       var entries = loader.loadAll();
       regen.reloadEntries(entries);
 
-      player.sendMessage(componentService.builder(player, "general.reload", "NotDefined").build());
+      player.sendMessage(componentService.builder(player, "general.reload", "NotDefined", true).build());
       return 1;
     } catch (Exception e) {
-      player.sendMessage(componentService.builder(player, "general.reload-failed", "NotDefined").build());
+      player.sendMessage(componentService.builder(player, "general.reload-failed", "NotDefined", true).build());
       e.printStackTrace();
       return 0;
     }

@@ -1,3 +1,4 @@
 general:
-  reload: '<gray>Successfully reloaded the config!'
-  reload-failed: '<red>Failed to reload the config!'
+  prefix: '<#02c7b0><b>ɴᴇxʀᴇɢᴇɴ<reset> <dark_gray>|<reset>'
+  reload: '<gray>Successfully reloaded the configs!'
+  reload-failed: '<red>Failed to reload the configs!'

@@ -16,7 +16,6 @@ regen:
         age: 7
       - id: has-berries
     settings:
-      apply-physics: false
       drop-items: false
       drop-xp: false
     replacement:
