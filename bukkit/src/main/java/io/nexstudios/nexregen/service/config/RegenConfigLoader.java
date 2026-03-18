@@ -1,4 +1,4 @@
-package io.nexstudios.nexregen.service;
+package io.nexstudios.nexregen.service.config;
 
 import io.nexstudios.configservice.config.ConfigurationSection;
 import io.nexstudios.configservice.config.FileConfiguration;
@@ -6,7 +6,7 @@ import io.nexstudios.configservice.service.multireader.MultiFileReaderService;
 import io.nexstudios.nexlogic.common.services.logging.LoggerService;
 import io.nexstudios.nexregen.service.model.RegenEntry;
 import io.nexstudios.nexregen.service.model.RegenSettings;
-import io.nexstudios.nexregen.service.util.BlockDataSpec;
+import io.nexstudios.nexregen.util.BlockDataSpec;
 import io.nexstudios.serviceregistry.di.Dependencies;
 import io.nexstudios.serviceregistry.di.Service;
 import io.nexstudios.serviceregistry.di.ServiceAccessor;
@@ -25,13 +25,26 @@ public final class RegenConfigLoader implements Service {
   private final MultiFileReaderService multiFileReader;
   private final LoggerService logger;
 
+  private static volatile Set<String> lastLoadedBlockFiles = Set.of();
+
   public RegenConfigLoader(ServiceAccessor services) {
     this.multiFileReader = services.getService(MultiFileReaderService.class);
     this.logger = services.getService(LoggerService.class);
   }
 
+  public static Set<String> lastLoadedBlockFiles() {
+    return lastLoadedBlockFiles;
+  }
+
   public List<RegenEntry> loadAll() {
     Map<Path, FileConfiguration> files = multiFileReader.loadAll(Path.of("blocks"));
+
+    Set<String> fileNames = new LinkedHashSet<>();
+    for (Path p : files.keySet()) {
+      if (p == null) continue;
+      fileNames.add(p.getFileName().toString());
+    }
+    lastLoadedBlockFiles = Collections.unmodifiableSet(fileNames);
 
     List<RegenEntry> out = new ArrayList<>();
     List<String> errors = new ArrayList<>();

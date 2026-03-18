@@ -5,8 +5,9 @@ import io.nexstudios.commandservice.service.commands.annotations.CommandRoot;
 import io.nexstudios.commandservice.service.commands.source.NexPaperCommandSource;
 import io.nexstudios.languageservice.service.component.ComponentService;
 import io.nexstudios.languageservice.service.language.LanguageService;
-import io.nexstudios.nexregen.service.RegenConfigLoader;
-import io.nexstudios.nexregen.service.RegenManager;
+import io.nexstudios.nexregen.service.config.RegenConfigLoader;
+import io.nexstudios.nexregen.service.manager.RegenManager;
+import io.nexstudios.nexregen.service.template.RegenTemplateService;
 import io.nexstudios.serviceregistry.di.Dependencies;
 import io.nexstudios.serviceregistry.di.Service;
 import io.nexstudios.serviceregistry.di.ServiceAccessor;
@@ -19,6 +20,7 @@ import org.bukkit.entity.Player;
 @Dependencies({
     RegenConfigLoader.class,
     RegenManager.class,
+    RegenTemplateService.class,
     ComponentService.class,
     LanguageService.class
 })
@@ -26,6 +28,7 @@ public final class RegenReloadCommand implements Service {
 
   private final RegenConfigLoader loader;
   private final RegenManager regen;
+  private final RegenTemplateService templateService;
   private final ComponentService componentService;
   private final LanguageService languageService;
 
@@ -34,6 +37,7 @@ public final class RegenReloadCommand implements Service {
     this.regen = accessor.getService(RegenManager.class);
     this.componentService = accessor.getService(ComponentService.class);
     this.languageService = accessor.getService(LanguageService.class);
+    this.templateService = accessor.getService(RegenTemplateService.class);
   }
 
   @Command(value = "reload", permission = "nexregen.admin")
@@ -44,6 +48,8 @@ public final class RegenReloadCommand implements Service {
     languageService.reload();
 
     try {
+      templateService.reload();
+
       var entries = loader.loadAll();
       regen.reloadEntries(entries);
 

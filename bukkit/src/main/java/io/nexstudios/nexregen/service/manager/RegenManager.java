@@ -1,7 +1,8 @@
-package io.nexstudios.nexregen.service;
+package io.nexstudios.nexregen.service.manager;
 
+import io.nexstudios.nexregen.util.NexLogicConditionFacade;
 import io.nexstudios.nexregen.service.model.RegenEntry;
-import io.nexstudios.nexregen.service.util.BlockKey;
+import io.nexstudios.nexregen.util.BlockKey;
 import io.nexstudios.serviceregistry.di.Service;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;

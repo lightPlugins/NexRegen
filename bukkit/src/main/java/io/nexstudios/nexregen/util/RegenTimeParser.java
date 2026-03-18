@@ -1,4 +1,4 @@
-package io.nexstudios.nexregen.service.util;
+package io.nexstudios.nexregen.util;
 
 import java.util.concurrent.ThreadLocalRandom;
 

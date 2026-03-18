@@ -1,8 +1,8 @@
 package io.nexstudios.nexregen.service.listener;
 
 import io.nexstudios.framework.paper.services.ServiceListener;
-import io.nexstudios.nexregen.service.RegenManager;
-import io.nexstudios.nexregen.service.util.BlockKey;
+import io.nexstudios.nexregen.service.manager.RegenManager;
+import io.nexstudios.nexregen.util.BlockKey;
 import io.nexstudios.serviceregistry.di.Dependencies;
 import io.nexstudios.serviceregistry.di.ServiceAccessor;
 import org.bukkit.Bukkit;

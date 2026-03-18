@@ -1,4 +1,4 @@
-package io.nexstudios.nexregen.service;
+package io.nexstudios.nexregen.util;
 
 import io.nexstudios.configservice.config.ConfigurationSection;
 import io.nexstudios.nexlogic.bukkit.services.effects.context.BukkitContextKeys;

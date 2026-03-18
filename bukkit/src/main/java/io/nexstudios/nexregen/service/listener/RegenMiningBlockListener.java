@@ -2,7 +2,7 @@ package io.nexstudios.nexregen.service.listener;
 
 import io.nexstudios.framework.paper.services.ServiceListener;
 import io.nexstudios.framework.paper.services.plugin.PaperPluginService;
-import io.nexstudios.nexregen.service.RegenManager;
+import io.nexstudios.nexregen.service.manager.RegenManager;
 import io.nexstudios.nexregen.service.model.RegenEntry;
 import io.nexstudios.serviceregistry.di.Dependencies;
 import io.nexstudios.serviceregistry.di.ServiceAccessor;

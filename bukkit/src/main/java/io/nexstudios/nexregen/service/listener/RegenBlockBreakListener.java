@@ -1,11 +1,11 @@
 package io.nexstudios.nexregen.service.listener;
 
-import io.nexstudios.nexregen.service.RegenManager;
+import io.nexstudios.nexregen.service.manager.RegenManager;
 import io.nexstudios.nexregen.service.model.RegenEntry;
 import io.nexstudios.nexregen.service.model.RegenSettings;
-import io.nexstudios.nexregen.service.util.AffectedBlockCalculator;
-import io.nexstudios.nexregen.service.util.BlockDataSpec;
-import io.nexstudios.nexregen.service.util.RegenTimeParser;
+import io.nexstudios.nexregen.util.AffectedBlockCalculator;
+import io.nexstudios.nexregen.util.BlockDataSpec;
+import io.nexstudios.nexregen.util.RegenTimeParser;
 import io.nexstudios.serviceregistry.di.Dependencies;
 import io.nexstudios.serviceregistry.di.ServiceAccessor;
 import org.bukkit.Bukkit;

@@ -1,4 +1,4 @@
-package io.nexstudios.nexregen.service.util;
+package io.nexstudios.nexregen.util;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;

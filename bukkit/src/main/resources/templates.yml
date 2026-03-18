@@ -1,0 +1,47 @@
+templates:
+  # the template name
+  'ore-template':
+    break-conditions:
+      - id: player-placed
+        value: false
+    settings:
+      drop-items: false
+      drop-xp: false
+      replacement:
+        block: 'minecraft:stone'
+  'crop-template':
+    # (optional) automatically detect max age for crops
+    # do not add the selected block to the list of blocks to regenerate, if it's not ageable!
+    detect-max-age: true
+    break-conditions:
+      - id: player-placed
+        value: false
+    settings:
+      drop-items: false
+      drop-xp: false
+      replacement:
+        # (optional) use the base crop block for replacement
+        use-base-crop: true
+        age: 0
+  'multi-block-template':
+    break-conditions:
+      - id: player-placed
+        value: false
+    settings:
+      drop-items: false
+      drop-xp: false
+      replace-only-bottom: true
+      replacement:
+        # (optional) only replace blocks of the same type
+        same-block-type: true
+  'berries-template':
+    # (optional) automatically detect max age for crops
+    # do not add the selected block to the list of blocks to regenerate, if it's not ageable!
+    detect-max-age: true
+    break-conditions: []
+    settings:
+      drop-items: false
+      drop-xp: false
+      replacement:
+        block: 'minecraft:sweet_berry_bush'
+        age: 1
