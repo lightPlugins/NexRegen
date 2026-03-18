@@ -59,32 +59,37 @@ public class NexRegenPlugin extends NexPaperPlugin {
 
   @Override
   protected void start() {
+    getLogger().info("NexRegen is starting...");
     initNexLogic();
 
     // init language files
     services().getService(LanguageService.class).reload();
 
+    getLogger().info("Read existing regen configs...");
     RegenConfigLoader loader = new RegenConfigLoader(services());
     services().register(RegenConfigLoader.class, loader);
     NexLogicConditionFacade conditionFacade = new NexLogicConditionFacade(nexLogicService);
 
+    getLogger().info("Load regen configs...");
     RegenManager regenManager = new RegenManager(this, loader.loadAll(), conditionFacade);
     services().register(RegenManager.class, regenManager);
 
     // register listeners
+    getLogger().info("Registering listeners...");
     PluginManager pm = Bukkit.getPluginManager();
     pm.registerEvents(new RegenMiningBlockListener(services()), this);
     pm.registerEvents(new RegenBlockBreakListener(services()), this);
     pm.registerEvents(new RegenFakeViewInteractListener(services()), this);
 
     // register commands
+    getLogger().info("Registering commands...");
     services().getService(CommandService.class).registerAll(
         List.of(
             RegenReloadCommand.class
         )
     );
 
-    getLogger().info("NexRegen started.");
+    getLogger().info("NexRegen successfully started.");
   }
 
   @Override
@@ -93,6 +98,7 @@ public class NexRegenPlugin extends NexPaperPlugin {
   }
 
   private void initNexLogic() {
+    getLogger().info("Hooking into NexLogic...");
     Plugin plugin = Bukkit.getPluginManager().getPlugin("NexLogic");
     if (plugin == null || !plugin.isEnabled()) {
       throw new IllegalStateException("Could not find NexLogic plugin! Please install it!");
