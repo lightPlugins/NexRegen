@@ -16,6 +16,8 @@ import io.nexstudios.nexregen.service.NexLogicConditionFacade;
 import io.nexstudios.nexregen.service.RegenConfigLoader;
 import io.nexstudios.nexregen.service.RegenManager;
 import io.nexstudios.nexregen.service.listener.RegenBlockBreakListener;
+import io.nexstudios.nexregen.service.listener.RegenFakeViewInteractListener;
+import io.nexstudios.nexregen.service.listener.RegenMiningBlockListener;
 import io.nexstudios.serviceregistry.di.ServiceAccessor;
 import io.nexstudios.serviceregistry.di.ServiceModule;
 import org.bukkit.Bukkit;
@@ -27,10 +29,7 @@ import java.util.List;
 
 public class NexRegenPlugin extends NexPaperPlugin {
 
-  private static NexLogicPlugin nexLogicPlugin;
   private static ServiceAccessor nexLogicService;
-
-  private RegenManager regenManager;
 
   @Override
   protected void configureServices(@NotNull ServiceAccessor services) {
@@ -69,11 +68,14 @@ public class NexRegenPlugin extends NexPaperPlugin {
     services().register(RegenConfigLoader.class, loader);
     NexLogicConditionFacade conditionFacade = new NexLogicConditionFacade(nexLogicService);
 
-    this.regenManager = new RegenManager(this, loader.loadAll(), conditionFacade);
+    RegenManager regenManager = new RegenManager(this, loader.loadAll(), conditionFacade);
     services().register(RegenManager.class, regenManager);
 
+    // register listeners
     PluginManager pm = Bukkit.getPluginManager();
+    pm.registerEvents(new RegenMiningBlockListener(services()), this);
     pm.registerEvents(new RegenBlockBreakListener(services()), this);
+    pm.registerEvents(new RegenFakeViewInteractListener(services()), this);
 
     // register commands
     services().getService(CommandService.class).registerAll(
@@ -100,7 +102,6 @@ public class NexRegenPlugin extends NexPaperPlugin {
       throw new IllegalStateException("Plugin 'NexLogic' is not a NexLogicPlugin: " + plugin.getClass().getName());
     }
 
-    nexLogicPlugin = nexLogic;
     nexLogicService = nexLogic.services();
     getLogger().info("Successfully hooked into NexLogic!");
   }
