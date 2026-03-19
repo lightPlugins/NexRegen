@@ -8,7 +8,6 @@ import io.nexstudios.framework.paper.NexPaperPlugin;
 import io.nexstudios.itemservice.bukkit.ItemServiceModule;
 import io.nexstudios.languageservice.LanguageServiceModule;
 import io.nexstudios.languageservice.service.language.LanguageService;
-import io.nexstudios.menuservice.bukkit.service.menu.MenuServiceModule;
 import io.nexstudios.nexlogic.bukkit.NexLogicPlugin;
 import io.nexstudios.nexlogic.bukkit.services.effects.logging.BukkitLoggerService;
 import io.nexstudios.nexlogic.common.services.logging.LoggerService;
@@ -45,8 +44,6 @@ public class NexRegenPlugin extends NexPaperPlugin {
     services.install(new LanguageServiceModule(this));
     // install ItemService
     services.install(new ItemServiceModule(this));
-    // install MenuService
-    services.install(new MenuServiceModule(this));
     // install Command Service
     services.install(new CommandServiceModule(this));
 
