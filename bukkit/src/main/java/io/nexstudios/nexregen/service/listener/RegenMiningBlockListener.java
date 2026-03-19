@@ -3,6 +3,7 @@ package io.nexstudios.nexregen.service.listener;
 import io.nexstudios.framework.paper.services.ServiceListener;
 import io.nexstudios.framework.paper.services.plugin.PaperPluginService;
 import io.nexstudios.nexregen.service.manager.RegenManager;
+import io.nexstudios.nexregen.service.model.BreakKey;
 import io.nexstudios.nexregen.service.model.RegenEntry;
 import io.nexstudios.serviceregistry.di.Dependencies;
 import io.nexstudios.serviceregistry.di.ServiceAccessor;
@@ -57,13 +58,19 @@ public final class RegenMiningBlockListener implements ServiceListener {
       } else {
         RegenEntry entry = match.get();
 
-        boolean globalOk = regen.conditions().evaluateAll(entry.globalConditions(), block, player, "nexregen-global");
-        if (!globalOk) {
+        // respect break-key for left click mining
+        BreakKey leftKey = BreakKey.fromBreak(player.isSneaking());
+        if (!regen.isBreakKeyAllowed(entry, leftKey)) {
           allowed = false;
         } else {
-          boolean breakOk = regen.conditions().evaluateAll(entry.breakConditions(), block, player, "nexregen-break");
-          if (!breakOk) {
+          boolean globalOk = regen.conditions().evaluateAll(entry.globalConditions(), block, player, "nexregen-global");
+          if (!globalOk) {
             allowed = false;
+          } else {
+            boolean breakOk = regen.conditions().evaluateAll(entry.breakConditions(), block, player, "nexregen-break");
+            if (!breakOk) {
+              allowed = false;
+            }
           }
         }
       }

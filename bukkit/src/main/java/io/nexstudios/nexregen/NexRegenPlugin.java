@@ -15,6 +15,7 @@ import io.nexstudios.nexregen.command.RegenAddCommand;
 import io.nexstudios.nexregen.command.RegenReloadCommand;
 import io.nexstudios.nexregen.command.RegenRemoveCommand;
 import io.nexstudios.nexregen.service.config.RegenConfigLoader;
+import io.nexstudios.nexregen.service.listener.RegenBlockInteractListener;
 import io.nexstudios.nexregen.service.manager.RegenManager;
 import io.nexstudios.nexregen.service.listener.RegenBlockBreakListener;
 import io.nexstudios.nexregen.service.listener.RegenFakeViewInteractListener;
@@ -90,6 +91,7 @@ public class NexRegenPlugin extends NexPaperPlugin {
     pm.registerEvents(new RegenMiningBlockListener(services()), this);
     pm.registerEvents(new RegenBlockBreakListener(services()), this);
     pm.registerEvents(new RegenFakeViewInteractListener(services()), this);
+    pm.registerEvents(new RegenBlockInteractListener(services()), this);
 
     // register commands
     getLogger().info("Registering commands...");

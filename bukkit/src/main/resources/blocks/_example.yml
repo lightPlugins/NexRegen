@@ -11,6 +11,11 @@ regen:
   - block: 'minecraft:wheat'
     age: 7
     regen-time: '3-5'
+    break-type:
+      #- 'right-click'
+      - 'left-click'
+      #- 'shift-left-click'
+      #- 'shift-right-click'
     break-conditions:
       - id: has-age
         age: 7

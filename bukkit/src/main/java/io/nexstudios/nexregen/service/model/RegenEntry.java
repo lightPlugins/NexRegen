@@ -16,6 +16,7 @@ public record RegenEntry(
     List<ConfigurationSection> breakConditions,
     RegenSettings settings,
     String replacementBlockDataSpec,
-    String finalBlockDataSpec
+    String finalBlockDataSpec,
+    List<BreakKey>breakKeys
 ) {
 }

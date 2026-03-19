@@ -1,6 +1,8 @@
 templates:
   # the template name
   'ore-template':
+    break-key:
+      - 'left-click'
     break-conditions:
       - id: player-placed
         value: false
@@ -13,6 +15,8 @@ templates:
     # (optional) automatically detect max age for crops
     # do not add the selected block to the list of blocks to regenerate, if it's not ageable!
     detect-max-age: true
+    break-key:
+      - 'left-click'
     break-conditions:
       - id: player-placed
         value: false
@@ -24,6 +28,8 @@ templates:
         use-base-crop: true
         age: 0
   'multi-block-template':
+    break-key:
+      - 'left-click'
     break-conditions:
       - id: player-placed
         value: false
@@ -38,6 +44,8 @@ templates:
     # (optional) automatically detect max age for crops
     # do not add the selected block to the list of blocks to regenerate, if it's not ageable!
     detect-max-age: true
+    break-key:
+      - 'left-click'
     break-conditions: []
     settings:
       drop-items: false

@@ -4,6 +4,7 @@ import io.nexstudios.configservice.config.ConfigurationSection;
 import io.nexstudios.configservice.config.FileConfiguration;
 import io.nexstudios.configservice.service.multireader.MultiFileReaderService;
 import io.nexstudios.nexlogic.common.services.logging.LoggerService;
+import io.nexstudios.nexregen.service.model.BreakKey;
 import io.nexstudios.nexregen.service.model.RegenEntry;
 import io.nexstudios.nexregen.service.model.RegenSettings;
 import io.nexstudios.nexregen.util.BlockDataSpec;
@@ -258,6 +259,14 @@ public final class RegenConfigLoader implements Service {
         return Optional.empty();
       }
 
+      List<BreakKey> breakKeys;
+      try {
+        breakKeys = parseBreakKeys(sec);
+      } catch (Exception ex) {
+        errors.add(formatConfigError(fileName, entryIndex, "Failed to parse 'break-key' list", ex));
+        return Optional.empty();
+      }
+
       List<ConfigurationSection> breakConditions = sec.getSectionList("break-conditions");
 
       ConfigurationSection settingsSec = sec.getSection("settings");
@@ -291,13 +300,39 @@ public final class RegenConfigLoader implements Service {
           breakConditions,
           settings,
           replacementSpecNoAge,
-          finalSpecNoAge
+          finalSpecNoAge,
+          breakKeys
       ));
     } catch (Exception ex) {
       // Catch-all so config never hard-fails the plugin
       errors.add(formatConfigError(fileName, entryIndex, "Unexpected error while parsing regen entry", ex));
       return Optional.empty();
     }
+  }
+
+  private static List<BreakKey> parseBreakKeys(ConfigurationSection sec) {
+    // Primary: break-key
+    List<?> raw = sec.getStringList("break-key");
+
+    // Backwards compatibility: break-type (from existing example file)
+    if (raw == null || raw.isEmpty()) {
+      raw = sec.getStringList("break-type");
+    }
+
+    // Default behavior (old system was effectively: left click triggers BlockBreakEvent)
+    if (raw == null) {
+      return List.of(BreakKey.LEFT_CLICK, BreakKey.SHIFT_LEFT_CLICK);
+    }
+
+    LinkedHashSet<BreakKey> out = new LinkedHashSet<>();
+    for (Object o : raw) {
+      if (o == null) continue;
+      String s = String.valueOf(o).trim();
+      if (s.isEmpty()) continue;
+      out.add(BreakKey.fromConfigString(s));
+    }
+
+    return List.copyOf(out);
   }
 
   private static OptionalInt optionalInt(ConfigurationSection sec, String path) {

@@ -1,14 +1,25 @@
 package io.nexstudios.nexregen.service.manager;
 
 import io.nexstudios.nexregen.service.config.RegenConfigLoader;
-import io.nexstudios.nexregen.util.NexLogicConditionFacade;
+import io.nexstudios.nexregen.service.model.BreakKey;
 import io.nexstudios.nexregen.service.model.RegenEntry;
+import io.nexstudios.nexregen.service.model.RegenSettings;
+import io.nexstudios.nexregen.util.AffectedBlockCalculator;
+import io.nexstudios.nexregen.util.BlockDataSpec;
 import io.nexstudios.nexregen.util.BlockKey;
+import io.nexstudios.nexregen.util.NexLogicConditionFacade;
+import io.nexstudios.nexregen.util.RegenTimeParser;
 import io.nexstudios.serviceregistry.di.Service;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
@@ -204,5 +215,184 @@ public final class RegenManager implements Service {
     Map<BlockKey, BlockData> orig = originalViewByPlayer.get(player.getUniqueId());
     if (orig == null) return Optional.empty();
     return Optional.ofNullable(orig.get(BlockKey.of(block.getLocation())));
+  }
+
+  public boolean isBreakKeyAllowed(RegenEntry entry, BreakKey key) {
+    if (entry == null || key == null) return false;
+    List<BreakKey> keys = entry.breakKeys();
+    if (keys == null || keys.isEmpty()) return false;
+    return keys.contains(key);
+  }
+
+  public boolean attemptBreak(Player player, Block block, BreakKey key) {
+    if (player == null || block == null || key == null) return false;
+
+    if (player.getGameMode().equals(GameMode.CREATIVE)) {
+      return false;
+    }
+
+    if (isInternalBreak(block)) return false;
+
+    Optional<RegenEntry> match = matchEntry(block);
+    if (match.isEmpty()) return false;
+
+    RegenEntry entry = match.get();
+
+    if (!isBreakKeyAllowed(entry, key)) {
+      return false;
+    }
+
+    if (isFakeLocked(player, block)) {
+      return false;
+    }
+
+    boolean globalOk = conditions.evaluateAll(entry.globalConditions(), block, player, "nexregen-global");
+    if (!globalOk) return false;
+
+    boolean breakOk = conditions.evaluateAll(entry.breakConditions(), block, player, "nexregen-break");
+    if (!breakOk) return false;
+
+    fakeLock(player, block);
+
+    AffectedBlockCalculator.Affected affected = AffectedBlockCalculator.computeAffected(block);
+    RegenSettings settings = entry.settings();
+
+    List<Block> viewOnlyBlocks = affected.blocksWithoutBreakEvent() != null ? affected.blocksWithoutBreakEvent() : List.of();
+
+    List<Block> allAffectedBlocks;
+    if (viewOnlyBlocks.isEmpty()) {
+      allAffectedBlocks = affected.blocksWithBreakEvent();
+    } else {
+      ArrayList<Block> tmp = new ArrayList<>(affected.blocksWithBreakEvent().size() + viewOnlyBlocks.size());
+      tmp.addAll(affected.blocksWithBreakEvent());
+      for (Block b : viewOnlyBlocks) {
+        if (b == null) continue;
+        if (!AffectedBlockCalculator.containsSameBlock(tmp, b)) tmp.add(b);
+      }
+      allAffectedBlocks = List.copyOf(tmp);
+    }
+
+    // Fire synthetic BlockBreakEvents (including the clicked block),
+    // but skip the bottom block if replace-only-bottom is enabled.
+    Set<Block> syntheticBlocks = new HashSet<>(affected.blocksWithBreakEvent());
+    syntheticBlocks.add(block);
+
+    withInternalBreak(syntheticBlocks, () -> {
+      for (Block b : syntheticBlocks) {
+        if (settings.replaceOnlyBottom()
+            && Objects.equals(b, affected.bottomMost())) {
+          continue;
+        }
+
+        @SuppressWarnings("UnstableApiUsage")
+        BlockBreakEvent synthetic = new BlockBreakEvent(b, player);
+        synthetic.setDropItems(false);
+        synthetic.setExpToDrop(0);
+        Bukkit.getPluginManager().callEvent(synthetic);
+      }
+    });
+
+    // Manual drops / XP handling
+    if (settings.dropItems() || settings.dropXp()) {
+      ItemStack tool = player.getInventory().getItemInMainHand();
+
+      if (settings.dropItems()) {
+        for (Block b : affected.blocksWithBreakEvent()) {
+          dropNaturally(b, b.getDrops(tool, player));
+        }
+      }
+
+      if (settings.dropXp()) {
+        // We don't have a real event exp value here; keep consistent and do not grant extra XP by default.
+        // If you want XP, you can compute it or mirror vanilla by using b.getExpDrop(...) if available in your API.
+      }
+    }
+
+    // Determine which blocks should show the replacement state
+    List<Block> replacementTargets;
+    if (affected.columnBlocks() != null && !affected.columnBlocks().isEmpty()) {
+      replacementTargets = settings.replaceOnlyBottom()
+          ? List.of(affected.bottomMost())
+          : List.copyOf(affected.columnBlocks());
+    } else {
+      replacementTargets = List.of(block);
+    }
+
+    BlockData air = Bukkit.createBlockData("minecraft:air");
+
+    BlockData replacementData = BlockDataSpec.toBlockDataWithoutAge(entry.replacementBlockDataSpec());
+    BlockDataSpec.applyAgeIfPossible(
+        replacementData,
+        entry.replacementAge().isPresent() ? Optional.of(entry.replacementAge().getAsInt()) : Optional.empty()
+    );
+
+    BlockData finalData = BlockDataSpec.toBlockDataWithoutAge(entry.finalBlockDataSpec());
+    BlockDataSpec.applyAgeIfPossible(
+        finalData,
+        entry.finalAge().isPresent() ? Optional.of(entry.finalAge().getAsInt()) : Optional.empty()
+    );
+
+    fakeLock(player, allAffectedBlocks);
+
+    // Snapshot originals BEFORE faking anything
+    for (Block b : allAffectedBlocks) {
+      BlockData original = b.getBlockData().clone();
+      storeOriginalIfAbsent(player, b, original);
+    }
+
+    // Apply fake immediately
+    for (Block b : allAffectedBlocks) {
+      fakeSetView(player, b, air);
+      player.sendBlockChange(b.getLocation(), air);
+    }
+    for (Block b : replacementTargets) {
+      fakeSetView(player, b, replacementData);
+      player.sendBlockChange(b.getLocation(), replacementData);
+    }
+
+    // Re-assert clicked block next tick
+    Bukkit.getScheduler().runTask(plugin, () -> {
+      fakeGetView(player, block).ifPresent(view -> player.sendBlockChange(block.getLocation(), view));
+    });
+
+    long delayTicks = RegenTimeParser.parseToTicks(entry.regenTimeSpec());
+    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+      try {
+        for (Block b : allAffectedBlocks) {
+          BlockData restore = getOriginal(player, b).orElse(finalData);
+          player.sendBlockChange(b.getLocation(), restore);
+        }
+      } finally {
+        fakeUnlock(player, allAffectedBlocks);
+      }
+    }, delayTicks);
+
+    return true;
+  }
+
+  private static void dropNaturally(Block at, Collection<ItemStack> drops) {
+    if (at == null || drops == null || drops.isEmpty()) return;
+    for (ItemStack is : drops) {
+      if (is == null || is.getType().isAir() || is.getAmount() <= 0) continue;
+      at.getWorld().dropItemNaturally(at.getLocation().add(0.5, 0.5, 0.5), is);
+    }
+  }
+
+  public void denyInteract(Player player, PlayerInteractEvent event) {
+    if (event == null) return;
+    event.setCancelled(true);
+    event.setUseInteractedBlock(Event.Result.DENY);
+    event.setUseItemInHand(Event.Result.DENY);
+
+    if (player == null) return;
+    Block clicked = event.getClickedBlock();
+    if (clicked == null) return;
+
+    fakeGetView(player, clicked).ifPresent(view ->
+        Bukkit.getScheduler().runTask(plugin, () -> {
+          if (!player.isOnline()) return;
+          player.sendBlockChange(clicked.getLocation(), view);
+        })
+    );
   }
 }

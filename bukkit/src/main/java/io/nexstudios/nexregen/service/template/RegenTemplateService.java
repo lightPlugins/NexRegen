@@ -1,6 +1,7 @@
 package io.nexstudios.nexregen.service.template;
 
 import io.nexstudios.nexregen.service.manager.RegenManager;
+import io.nexstudios.nexregen.service.model.BreakKey;
 import io.nexstudios.serviceregistry.di.Dependencies;
 import io.nexstudios.serviceregistry.di.Service;
 import io.nexstudios.serviceregistry.di.ServiceAccessor;
@@ -109,6 +110,18 @@ public final class RegenTemplateService implements Service {
     }
 
     entry.put("regen-time", regenTimeSpec);
+
+    Object breakKeys = template.get("break-key");
+    if (breakKeys == null) {
+      // Backwards compatibility for template authors
+      breakKeys = template.get("break-type");
+    }
+    if (breakKeys != null) {
+      entry.put("break-key", deepCopyYamlValue(breakKeys));
+    } else {
+      // Default to classic behavior: left-click breaks
+      entry.put("break-key", List.of(BreakKey.LEFT_CLICK.toConfigString(), BreakKey.SHIFT_LEFT_CLICK.toConfigString()));
+    }
 
     Object breakConds = template.get("break-conditions");
     if (breakConds != null) {
