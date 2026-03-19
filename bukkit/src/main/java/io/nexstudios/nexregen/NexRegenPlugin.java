@@ -14,6 +14,7 @@ import io.nexstudios.nexlogic.bukkit.services.effects.logging.BukkitLoggerServic
 import io.nexstudios.nexlogic.common.services.logging.LoggerService;
 import io.nexstudios.nexregen.command.RegenAddCommand;
 import io.nexstudios.nexregen.command.RegenReloadCommand;
+import io.nexstudios.nexregen.command.RegenRemoveCommand;
 import io.nexstudios.nexregen.service.config.RegenConfigLoader;
 import io.nexstudios.nexregen.service.manager.RegenManager;
 import io.nexstudios.nexregen.service.listener.RegenBlockBreakListener;
@@ -82,7 +83,7 @@ public class NexRegenPlugin extends NexPaperPlugin {
         true
     );
 
-    RegenManager regenManager = new RegenManager(this, loader.loadAll(), conditionFacade);
+    RegenManager regenManager = new RegenManager(this, loader, conditionFacade);
     services().register(RegenManager.class, regenManager);
     services().register(RegenTemplateService.class, RegenTemplateService.class);
 
@@ -98,7 +99,8 @@ public class NexRegenPlugin extends NexPaperPlugin {
     services().getService(CommandService.class).registerAll(
         List.of(
             RegenReloadCommand.class,
-            RegenAddCommand.class
+            RegenAddCommand.class,
+            RegenRemoveCommand.class
         )
     );
 

@@ -1,15 +1,22 @@
 package io.nexstudios.nexregen.util;
 
+import lombok.NoArgsConstructor;
+
 import java.util.concurrent.ThreadLocalRandom;
 
+@NoArgsConstructor()
 public final class RegenTimeParser {
 
-  private RegenTimeParser() {}
-
   /**
-   * Supported:
-   * - "5" -> 5 seconds
-   * - "3-5" -> random 3..5 seconds
+   * Parses a time specification in seconds or a range of seconds into game ticks.
+   * If the input specifies a range (e.g., "5-10"), a random value within the range is chosen and converted to ticks.
+   * If the input specifies a single value (e.g., "5"), it is directly converted to ticks.
+   *
+   * @param spec the time specification as a string, either a single integer
+   *             or a range in the format "min-max".
+   * @return the calculated number of ticks, where 1 second equals 20 ticks.
+   * @throws NumberFormatException if the input string is not in a valid format
+   *                               or cannot be converted to an integer.
    */
   public static long parseToTicks(String spec) {
     String s = spec.trim();

@@ -1,5 +1,6 @@
 package io.nexstudios.nexregen.service.manager;
 
+import io.nexstudios.nexregen.service.config.RegenConfigLoader;
 import io.nexstudios.nexregen.util.NexLogicConditionFacade;
 import io.nexstudios.nexregen.service.model.RegenEntry;
 import io.nexstudios.nexregen.util.BlockKey;
@@ -16,20 +17,24 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class RegenManager implements Service {
 
   private final JavaPlugin plugin;
+  private final RegenConfigLoader loader;
   private volatile List<RegenEntry> entries;
   private final NexLogicConditionFacade conditions;
 
   private final Map<UUID, Set<BlockKey>> fakeLockedByPlayer = new ConcurrentHashMap<>();
   private final Map<UUID, Map<BlockKey, BlockData>> fakeViewByPlayer = new ConcurrentHashMap<>();
 
-  // NEW: original block state snapshot (per player) to restore after regen-time
+  // original block state snapshot (per player) to restore after regen-time
   private final Map<UUID, Map<BlockKey, BlockData>> originalViewByPlayer = new ConcurrentHashMap<>();
 
   private final ThreadLocal<Set<BlockKey>> internalBreak = ThreadLocal.withInitial(HashSet::new);
 
-  public RegenManager(JavaPlugin plugin, List<RegenEntry> entries, NexLogicConditionFacade conditions) {
+  public record RemoveResult(int removed, int before, int after, String fileName) {}
+
+  public RegenManager(JavaPlugin plugin, RegenConfigLoader loader, NexLogicConditionFacade conditions) {
     this.plugin = plugin;
-    this.entries = List.copyOf(entries);
+    this.loader = loader;
+    this.entries = loader.loadAll();
     this.conditions = conditions;
   }
 
@@ -45,14 +50,39 @@ public final class RegenManager implements Service {
     this.entries = List.copyOf(newEntries);
   }
 
+  public RemoveResult removeRegenEntry(String blockFile, Block target) {
+    Objects.requireNonNull(blockFile, "blockFile");
+    Objects.requireNonNull(target, "target");
+
+    String targetBlockSpec = "minecraft:" + target.getType().getKey().getKey();
+
+    OptionalInt targetAge = OptionalInt.empty();
+    if (target.getBlockData() instanceof Ageable ageable) {
+      targetAge = OptionalInt.of(ageable.getAge());
+    }
+
+    RegenConfigLoader.RemoveResult res = loader.removeFromBlockFile(
+        plugin.getDataFolder(),
+        blockFile,
+        targetBlockSpec,
+        targetAge
+    );
+
+    if (res.removed() > 0) {
+      reloadEntries(loader.loadAll());
+    }
+
+    return new RemoveResult(res.removed(), res.before(), res.after(), res.fileName());
+  }
+
   public Optional<RegenEntry> matchEntry(Block block) {
-    for (RegenEntry e : entries) {
-      if (block.getType() != e.matchMaterial()) continue;
-      if (e.matchAge().isPresent()) {
+    for (RegenEntry entry : entries) {
+      if (block.getType() != entry.matchMaterial()) continue;
+      if (entry.matchAge().isPresent()) {
         if (!(block.getBlockData() instanceof Ageable ageable)) continue;
-        if (ageable.getAge() != e.matchAge().getAsInt()) continue;
+        if (ageable.getAge() != entry.matchAge().getAsInt()) continue;
       }
-      return Optional.of(e);
+      return Optional.of(entry);
     }
     return Optional.empty();
   }
@@ -65,18 +95,18 @@ public final class RegenManager implements Service {
   public void withInternalBreak(Collection<Block> blocks, Runnable action) {
     Set<BlockKey> set = internalBreak.get();
     if (blocks != null) {
-      for (Block b : blocks) {
-        if (b == null) continue;
-        set.add(BlockKey.of(b.getLocation()));
+      for (Block block : blocks) {
+        if (block == null) continue;
+        set.add(BlockKey.of(block.getLocation()));
       }
     }
     try {
       action.run();
     } finally {
       if (blocks != null) {
-        for (Block b : blocks) {
-          if (b == null) continue;
-          set.remove(BlockKey.of(b.getLocation()));
+        for (Block block : blocks) {
+          if (block == null) continue;
+          set.remove(BlockKey.of(block.getLocation()));
         }
       }
     }
@@ -93,8 +123,8 @@ public final class RegenManager implements Service {
     if (player == null || blocks == null || blocks.isEmpty()) return;
     UUID pid = player.getUniqueId();
     Set<BlockKey> set = fakeLockedByPlayer.computeIfAbsent(pid, k -> ConcurrentHashMap.newKeySet());
-    for (Block b : blocks) {
-      set.add(BlockKey.of(b.getLocation()));
+    for (Block block : blocks) {
+      set.add(BlockKey.of(block.getLocation()));
     }
   }
 
@@ -160,7 +190,7 @@ public final class RegenManager implements Service {
     return Map.copyOf(view);
   }
 
-  // NEW: store and retrieve original blockdata snapshots
+  // store and retrieve original blockdata snapshots
   public void storeOriginalIfAbsent(Player player, Block block, BlockData original) {
     if (player == null || block == null || original == null) return;
     UUID pid = player.getUniqueId();

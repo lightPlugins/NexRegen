@@ -2,6 +2,7 @@ general:
   prefix: '<#02c7b0><b>ɴᴇxʀᴇɢᴇɴ<reset> <dark_gray>|<reset>'
   reload: '<gray>Successfully reloaded the configs!'
   reload-failed: '<red>Failed to reload the configs!'
+  error: '<red>An error occurred! Check console.'
 template:
   add-success: '<gray>Successfully added <#02c7b0><block> <gray>to <#02c7b0><file-name> <gray>with template id <#02c7b0><template-id><gray>!'
   missing-regen-time: '<red>Missing regen-time. Example: <#02c7b0></nexregen add farm crop-template 3-5'
@@ -11,3 +12,6 @@ template:
   invalid-template-id: '<red>Unknown template id <#02c7b0><template-id><red>!'
   add-failed: '<red>Failed to add the block to <#02c7b0><file-name><reset>!'
   not-loaded: '<red>Saved, but reload failed. Check console.'
+  remove-failed: '<red>Failed to remove the block from <#02c7b0><file-name><reset>!'
+  remove-success: '<gray>Successfully removed <#02c7b0><block> <gray>from <#02c7b0><file-name><gray>!'
+  block-not-found: '<red>The block <#02c7b0><block> <red>was not found in <#02c7b0><file-name>'

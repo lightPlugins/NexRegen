@@ -63,10 +63,14 @@ public final class BlockDataSpec {
   }
 
   /**
-   * Accepts specs like:
-   * - "minecraft:wheat"
-   * - "minecraft:wheat age:0"
-   * - "minecraft:wheat[age=0]" (already valid)
+   * Normalizes the given input string to a specific format. The method trims the input,
+   * identifies and processes key-value properties, and appends them in the form of
+   * key=value pairs within square brackets if properties are present.
+   *
+   * @param input The input string to be normalized. This is generally expected to
+   *              contain a material type followed by optional properties in the form of key:value pairs.
+   * @return The normalized string. If the input contains properties, they will be
+   *         formatted and appended. If no properties are present, the trimmed material name is returned.
    */
   public static String normalize(String input) {
     String raw = input.trim();

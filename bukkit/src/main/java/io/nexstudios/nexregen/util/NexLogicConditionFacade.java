@@ -48,11 +48,13 @@ public final class NexLogicConditionFacade {
     ctx.put(BukkitContextKeys.BLOCK, block);
     ctx.put(BukkitContextKeys.PLAYER, player);
     ctx.put(BukkitContextKeys.WORLD, block.getWorld());
+    ctx.put(BukkitContextKeys.LOCATION, block.getLocation());
 
     ctx.declareCapabilities(
         ContextCapability.BLOCK,
         ContextCapability.PLAYER,
-        ContextCapability.WORLD
+        ContextCapability.WORLD,
+        ContextCapability.LOCATION
     );
 
     ConditionEvaluationResult res = evaluator.evaluateAt(

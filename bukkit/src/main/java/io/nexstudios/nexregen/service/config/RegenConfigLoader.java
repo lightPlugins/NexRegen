@@ -11,7 +11,10 @@ import io.nexstudios.serviceregistry.di.Dependencies;
 import io.nexstudios.serviceregistry.di.Service;
 import io.nexstudios.serviceregistry.di.ServiceAccessor;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.YamlConfiguration;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.OptionalInt;
@@ -36,6 +39,91 @@ public final class RegenConfigLoader implements Service {
     return lastLoadedBlockFiles;
   }
 
+  public record RemoveResult(int removed, int before, int after, String fileName) {}
+
+  public RemoveResult removeFromBlockFile(File pluginDataFolder, String blockFile, String targetBlockSpec, OptionalInt targetAge) {
+    Objects.requireNonNull(pluginDataFolder, "pluginDataFolder");
+    String fileName = normalizeBlockFileName(blockFile);
+
+    File blocksDir = new File(pluginDataFolder, "blocks");
+    File inFile = new File(blocksDir, fileName);
+
+    if (!inFile.exists()) {
+      return new RemoveResult(0, 0, 0, inFile.getName());
+    }
+
+    YamlConfiguration cfg = YamlConfiguration.loadConfiguration(inFile);
+    List<Map<String, Object>> regenList = readRegenList(cfg);
+
+    int before = regenList.size();
+    if (before == 0) {
+      return new RemoveResult(0, 0, 0, inFile.getName());
+    }
+
+    List<Map<String, Object>> filtered = new ArrayList<>(regenList.size());
+    int removed = 0;
+
+    for (Map<String, Object> entry : regenList) {
+      if (entry == null) continue;
+
+      String entryBlock = Objects.toString(entry.get("block"), "").trim();
+      if (entryBlock.isEmpty()) {
+        filtered.add(entry);
+        continue;
+      }
+
+      String entryBlockNorm;
+      try {
+        entryBlockNorm = BlockDataSpec.normalize(entryBlock);
+      } catch (Exception ex) {
+        filtered.add(entry);
+        continue;
+      }
+
+      boolean sameMaterial = entryBlockNorm.equalsIgnoreCase(targetBlockSpec);
+
+      OptionalInt entryAge = OptionalInt.empty();
+      Object rawAge = entry.get("age");
+      if (rawAge instanceof Number n) {
+        entryAge = OptionalInt.of(n.intValue());
+      } else if (rawAge instanceof String s && !s.isBlank()) {
+        try {
+          entryAge = OptionalInt.of(Integer.parseInt(s.trim()));
+        } catch (Exception ignored) {
+          // keep empty
+        }
+      }
+
+      boolean ageMatches;
+      if (entryAge.isPresent()) {
+        ageMatches = targetAge.isPresent() && targetAge.getAsInt() == entryAge.getAsInt();
+      } else {
+        ageMatches = true;
+      }
+
+      if (sameMaterial && ageMatches) {
+        removed++;
+        continue;
+      }
+
+      filtered.add(entry);
+    }
+
+    if (removed <= 0) {
+      return new RemoveResult(0, before, before, inFile.getName());
+    }
+
+    cfg.set("regen", filtered);
+
+    try {
+      cfg.save(inFile);
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to save " + inFile.getPath(), e);
+    }
+
+    return new RemoveResult(removed, before, filtered.size(), inFile.getName());
+  }
+
   public List<RegenEntry> loadAll() {
     Map<Path, FileConfiguration> files = multiFileReader.loadAll(Path.of("blocks"));
 
@@ -54,7 +142,6 @@ public final class RegenConfigLoader implements Service {
       Path rel = e.getKey();
       FileConfiguration cfg = e.getValue();
 
-      // Skip file if disabled (also safe if config implementation throws -> we catch below)
       try {
         if (!cfg.getBoolean("enable", true)) continue;
       } catch (Exception ex) {
@@ -82,7 +169,6 @@ public final class RegenConfigLoader implements Service {
       }
     }
 
-    // Only ONE console error for all config problems
     if (!errors.isEmpty()) {
       StringBuilder sb = new StringBuilder();
       sb.append("NexRegen: Configuration errors detected. The plugin will continue running, ")
@@ -99,6 +185,35 @@ public final class RegenConfigLoader implements Service {
     }
 
     return List.copyOf(out);
+  }
+
+  private static String normalizeBlockFileName(String input) {
+    String s = input == null ? "" : input.trim();
+    if (s.isEmpty()) return "blocks.yml";
+    String lower = s.toLowerCase(Locale.ROOT);
+    if (!lower.endsWith(".yml") && !lower.endsWith(".yaml")) {
+      s = s + ".yml";
+    }
+    return s;
+  }
+
+  private static List<Map<String, Object>> readRegenList(YamlConfiguration cfg) {
+    Object raw = cfg.get("regen");
+    if (raw == null) return new ArrayList<>();
+    if (raw instanceof List<?> list) {
+      List<Map<String, Object>> res = new ArrayList<>();
+      for (Object o : list) {
+        if (o instanceof Map<?, ?> m) {
+          Map<String, Object> mm = new LinkedHashMap<>();
+          for (Map.Entry<?, ?> e : m.entrySet()) {
+            mm.put(String.valueOf(e.getKey()), e.getValue());
+          }
+          res.add(mm);
+        }
+      }
+      return res;
+    }
+    return new ArrayList<>();
   }
 
   private Optional<RegenEntry> parseEntry(
