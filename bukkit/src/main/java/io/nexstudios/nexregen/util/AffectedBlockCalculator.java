@@ -4,9 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Bisected;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public final class AffectedBlockCalculator {
 
@@ -17,7 +15,6 @@ public final class AffectedBlockCalculator {
       return new Affected(null, null, List.of(), List.of(), null);
     }
 
-    // Double height handling
     if (base.getBlockData() instanceof Bisected bisected) {
       Block other = bisected.getHalf() == Bisected.Half.BOTTOM
           ? base.getRelative(0, 1, 0)
@@ -29,7 +26,6 @@ public final class AffectedBlockCalculator {
 
     Material type = base.getType();
     if (type == Material.CACTUS || type == Material.SUGAR_CANE || type == Material.BAMBOO) {
-      // Find bottom-most (connected downwards)
       Block bottom = base;
       Block cursorDown = base.getRelative(0, -1, 0);
       while (cursorDown.getType() == type) {
@@ -37,7 +33,6 @@ public final class AffectedBlockCalculator {
         cursorDown = cursorDown.getRelative(0, -1, 0);
       }
 
-      // Collect full column upwards
       List<Block> column = new ArrayList<>();
       column.add(bottom);
 
@@ -47,16 +42,20 @@ public final class AffectedBlockCalculator {
         cursorUp = cursorUp.getRelative(0, 1, 0);
       }
 
-      if (!containsSameBlock(column, base)) {
+      Set<BlockKey> columnKeys = new HashSet<>();
+      for (Block b : column) {
+        columnKeys.add(BlockKey.of(b.getLocation()));
+      }
+
+      if (!columnKeys.contains(BlockKey.of(base.getLocation()))) {
         column.add(base);
       }
 
       column.sort(Comparator.comparingInt(Block::getY));
 
-      // cactus flower on top of cactus. No break event for it.
       List<Block> viewOnly = new ArrayList<>();
       if (type == Material.CACTUS) {
-        Block top = column.getLast(); // Java 21: SequencedCollection
+        Block top = column.getLast();
         Block aboveTop = top.getRelative(0, 1, 0);
         if (aboveTop.getType() == Material.CACTUS_FLOWER) {
           viewOnly.add(aboveTop);
@@ -71,12 +70,10 @@ public final class AffectedBlockCalculator {
 
   public static boolean containsSameBlock(List<Block> blocks, Block needle) {
     if (blocks == null || needle == null) return false;
+    BlockKey needleKey = BlockKey.of(needle.getLocation());
     for (Block b : blocks) {
       if (b == null) continue;
-      if (b.getWorld().equals(needle.getWorld())
-          && b.getX() == needle.getX()
-          && b.getY() == needle.getY()
-          && b.getZ() == needle.getZ()) {
+      if (BlockKey.of(b.getLocation()).equals(needleKey)) {
         return true;
       }
     }

@@ -15,11 +15,13 @@ import io.nexstudios.nexregen.command.RegenAddCommand;
 import io.nexstudios.nexregen.command.RegenReloadCommand;
 import io.nexstudios.nexregen.command.RegenRemoveCommand;
 import io.nexstudios.nexregen.service.config.RegenConfigLoader;
-import io.nexstudios.nexregen.service.listener.RegenBlockInteractListener;
-import io.nexstudios.nexregen.service.manager.RegenManager;
+import io.nexstudios.nexregen.service.config.PluginSettingsLoader;
 import io.nexstudios.nexregen.service.listener.RegenBlockBreakListener;
+import io.nexstudios.nexregen.service.listener.RegenBlockInteractListener;
+import io.nexstudios.nexregen.service.listener.RegenBlockPlaceListener;
 import io.nexstudios.nexregen.service.listener.RegenFakeViewInteractListener;
 import io.nexstudios.nexregen.service.listener.RegenMiningBlockListener;
+import io.nexstudios.nexregen.service.manager.RegenManager;
 import io.nexstudios.nexregen.service.template.RegenTemplateService;
 import io.nexstudios.nexregen.util.NexLogicConditionFacade;
 import io.nexstudios.serviceregistry.di.ServiceAccessor;
@@ -73,6 +75,11 @@ public class NexRegenPlugin extends NexPaperPlugin {
     services().register(RegenConfigLoader.class, loader);
     NexLogicConditionFacade conditionFacade = new NexLogicConditionFacade(nexLogicService);
 
+    getLogger().info("Load plugin settings...");
+    PluginSettingsLoader settingsLoader = new PluginSettingsLoader(services());
+    services().register(PluginSettingsLoader.class, settingsLoader);
+    var pluginSettings = settingsLoader.loadSettings();
+
     getLogger().info("Load regen configs...");
     FileReaderService fileReader = services().getService(FileReaderService.class);
     fileReader.load(
@@ -81,7 +88,7 @@ public class NexRegenPlugin extends NexPaperPlugin {
         true
     );
 
-    RegenManager regenManager = new RegenManager(this, loader, conditionFacade);
+    RegenManager regenManager = new RegenManager(this, loader, conditionFacade, pluginSettings);
     services().register(RegenManager.class, regenManager);
     services().register(RegenTemplateService.class, RegenTemplateService.class);
 
@@ -92,6 +99,7 @@ public class NexRegenPlugin extends NexPaperPlugin {
     pm.registerEvents(new RegenBlockBreakListener(services()), this);
     pm.registerEvents(new RegenFakeViewInteractListener(services()), this);
     pm.registerEvents(new RegenBlockInteractListener(services()), this);
+    pm.registerEvents(new RegenBlockPlaceListener(services()), this);
 
     // register commands
     getLogger().info("Registering commands...");

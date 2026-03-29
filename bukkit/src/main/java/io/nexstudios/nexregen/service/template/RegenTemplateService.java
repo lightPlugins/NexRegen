@@ -49,7 +49,9 @@ public final class RegenTemplateService implements Service {
     YamlConfiguration cfg = loadTemplatesConfig();
     if (cfg == null) return Optional.empty();
 
-    return Optional.ofNullable(cfg.getConfigurationSection("templates." + templateId));
+    ConfigurationSection section = cfg.getConfigurationSection("templates." + templateId);
+    if (section == null) return Optional.empty();
+    return Optional.of(section);
   }
 
   public Map<String, Object> buildEntryFromTemplate(Block target, String templateId, String regenTimeSpec) {

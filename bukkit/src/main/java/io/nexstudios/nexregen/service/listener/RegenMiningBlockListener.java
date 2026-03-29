@@ -92,7 +92,10 @@ public final class RegenMiningBlockListener implements ServiceListener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
   public void onQuit(PlayerQuitEvent event) {
-    clearMiningBlock(event.getPlayer());
+    Player player = event.getPlayer();
+    clearMiningBlock(player);
+    regen.cleanupPlayer(player);
+    regen.clearThreadLocals();
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)

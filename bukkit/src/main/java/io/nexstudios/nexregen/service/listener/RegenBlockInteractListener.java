@@ -10,6 +10,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
@@ -24,6 +25,26 @@ import java.util.Optional;
 public final class RegenBlockInteractListener implements ServiceListener {
 
   private final RegenManager regen;
+  private static final List<Material> INTERACTABLE_BLOCKS = List.of(
+      Material.CHEST,
+      Material.TRAPPED_CHEST,
+      Material.BARREL,
+      Material.FURNACE,
+      Material.BLAST_FURNACE,
+      Material.SMOKER,
+      Material.CRAFTING_TABLE,
+      Material.ANVIL,
+      Material.CHIPPED_ANVIL,
+      Material.DAMAGED_ANVIL,
+      Material.ENCHANTING_TABLE,
+      Material.GRINDSTONE,
+      Material.CARTOGRAPHY_TABLE,
+      Material.LOOM,
+      Material.STONECUTTER,
+      Material.BELL,
+      Material.JUKEBOX,
+      Material.COMPOSTER
+  );
 
   public RegenBlockInteractListener(ServiceAccessor accessor) {
     this.regen = accessor.getService(RegenManager.class);
@@ -32,58 +53,47 @@ public final class RegenBlockInteractListener implements ServiceListener {
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
   public void onInteract(PlayerInteractEvent event) {
     Player player = event.getPlayer();
-    if (player.getGameMode().equals(GameMode.CREATIVE)) return;
+    if (player.getGameMode().equals(GameMode.CREATIVE)) {
+      return;
+    }
 
-    if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+    if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+      return;
+    }
 
     Block clicked = event.getClickedBlock();
-    if (clicked == null) return;
+    if (clicked == null) {
+      return;
+    }
 
-    // ignore on interactable (so chests etc still work unless they are regen-managed)
-    List<Material> whitelist = List.of(
-        Material.CHEST,
-        Material.TRAPPED_CHEST,
-        Material.BARREL,
-        Material.FURNACE,
-        Material.BLAST_FURNACE,
-        Material.SMOKER,
-        Material.CRAFTING_TABLE,
-        Material.ANVIL,
-        Material.CHIPPED_ANVIL,
-        Material.DAMAGED_ANVIL,
-        Material.ENCHANTING_TABLE,
-        Material.GRINDSTONE,
-        Material.CARTOGRAPHY_TABLE,
-        Material.LOOM,
-        Material.STONECUTTER,
-        Material.BELL,
-        Material.JUKEBOX,
-        Material.COMPOSTER
-    );
+    if (!regen.settings().blockInteractionBlockingEnabled()) {
+      return;
+    }
 
-    if (whitelist.contains(clicked.getType())) {
-      // no-op (kept for clarity)
+    if (regen.settings().isBlockAllowed(clicked.getType())) {
       return;
     }
 
     Optional<RegenEntry> match = regen.matchEntry(clicked);
     if (match.isEmpty()) {
+      event.setCancelled(true);
+      event.setUseInteractedBlock(Event.Result.DENY);
+      event.setUseItemInHand(Event.Result.DENY);
       return;
     }
 
-    // If the block is regen-managed, we handle right click ourselves.
     RegenEntry entry = match.get();
-
     BreakKey key = BreakKey.fromInteract(event);
-    if (key == null) return;
+    if (key == null) {
+      regen.denyInteract(player, event);
+      return;
+    }
 
-    // If right-click is not allowed, deny interaction completely.
     if (!regen.isBreakKeyAllowed(entry, key)) {
       regen.denyInteract(player, event);
       return;
     }
 
-    // If allowed, behave like breaking: trigger the same regen flow.
     regen.denyInteract(player, event);
     regen.attemptBreak(player, clicked, key);
 

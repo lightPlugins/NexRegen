@@ -1,6 +1,7 @@
 package io.nexstudios.nexregen.service.manager;
 
 import io.nexstudios.nexregen.service.config.RegenConfigLoader;
+import io.nexstudios.nexregen.service.config.PluginSettings;
 import io.nexstudios.nexregen.service.model.BreakKey;
 import io.nexstudios.nexregen.service.model.RegenEntry;
 import io.nexstudios.nexregen.service.model.RegenSettings;
@@ -31,6 +32,7 @@ public final class RegenManager implements Service {
   private final RegenConfigLoader loader;
   private volatile List<RegenEntry> entries;
   private final NexLogicConditionFacade conditions;
+  private volatile PluginSettings settings;
 
   private final Map<UUID, Set<BlockKey>> fakeLockedByPlayer = new ConcurrentHashMap<>();
   private final Map<UUID, Map<BlockKey, BlockData>> fakeViewByPlayer = new ConcurrentHashMap<>();
@@ -42,11 +44,12 @@ public final class RegenManager implements Service {
 
   public record RemoveResult(int removed, int before, int after, String fileName) {}
 
-  public RegenManager(JavaPlugin plugin, RegenConfigLoader loader, NexLogicConditionFacade conditions) {
+  public RegenManager(JavaPlugin plugin, RegenConfigLoader loader, NexLogicConditionFacade conditions, PluginSettings settings) {
     this.plugin = plugin;
     this.loader = loader;
     this.entries = loader.loadAll();
     this.conditions = conditions;
+    this.settings = settings;
   }
 
   public JavaPlugin plugin() {
@@ -55,6 +58,14 @@ public final class RegenManager implements Service {
 
   public NexLogicConditionFacade conditions() {
     return conditions;
+  }
+
+  public PluginSettings settings() {
+    return settings;
+  }
+
+  public void updateSettings(PluginSettings newSettings) {
+    this.settings = newSettings;
   }
 
   public void reloadEntries(List<RegenEntry> newEntries) {
@@ -263,11 +274,17 @@ public final class RegenManager implements Service {
     if (viewOnlyBlocks.isEmpty()) {
       allAffectedBlocks = affected.blocksWithBreakEvent();
     } else {
-      ArrayList<Block> tmp = new ArrayList<>(affected.blocksWithBreakEvent().size() + viewOnlyBlocks.size());
-      tmp.addAll(affected.blocksWithBreakEvent());
+      Set<BlockKey> breakSet = new HashSet<>();
+      for (Block b : affected.blocksWithBreakEvent()) {
+        breakSet.add(BlockKey.of(b.getLocation()));
+      }
+
+      ArrayList<Block> tmp = new ArrayList<>(affected.blocksWithBreakEvent());
       for (Block b : viewOnlyBlocks) {
         if (b == null) continue;
-        if (!AffectedBlockCalculator.containsSameBlock(tmp, b)) tmp.add(b);
+        if (!breakSet.contains(BlockKey.of(b.getLocation()))) {
+          tmp.add(b);
+        }
       }
       allAffectedBlocks = List.copyOf(tmp);
     }
@@ -394,5 +411,17 @@ public final class RegenManager implements Service {
           player.sendBlockChange(clicked.getLocation(), view);
         })
     );
+  }
+
+  public void cleanupPlayer(Player player) {
+    if (player == null) return;
+    UUID pid = player.getUniqueId();
+    fakeLockedByPlayer.remove(pid);
+    fakeViewByPlayer.remove(pid);
+    originalViewByPlayer.remove(pid);
+  }
+
+  public void clearThreadLocals() {
+    internalBreak.remove();
   }
 }

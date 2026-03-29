@@ -6,6 +6,7 @@ import io.nexstudios.commandservice.service.commands.source.NexPaperCommandSourc
 import io.nexstudios.languageservice.service.component.ComponentService;
 import io.nexstudios.languageservice.service.language.LanguageService;
 import io.nexstudios.nexregen.service.config.RegenConfigLoader;
+import io.nexstudios.nexregen.service.config.PluginSettingsLoader;
 import io.nexstudios.nexregen.service.manager.RegenManager;
 import io.nexstudios.nexregen.service.template.RegenTemplateService;
 import io.nexstudios.serviceregistry.di.Dependencies;
@@ -19,6 +20,7 @@ import org.bukkit.entity.Player;
 )
 @Dependencies({
     RegenConfigLoader.class,
+    PluginSettingsLoader.class,
     RegenManager.class,
     RegenTemplateService.class,
     ComponentService.class,
@@ -27,6 +29,7 @@ import org.bukkit.entity.Player;
 public final class RegenReloadCommand implements Service {
 
   private final RegenConfigLoader loader;
+  private final PluginSettingsLoader settingsLoader;
   private final RegenManager regen;
   private final RegenTemplateService templateService;
   private final ComponentService componentService;
@@ -34,6 +37,7 @@ public final class RegenReloadCommand implements Service {
 
   public RegenReloadCommand(ServiceAccessor accessor) {
     this.loader = accessor.getService(RegenConfigLoader.class);
+    this.settingsLoader = accessor.getService(PluginSettingsLoader.class);
     this.regen = accessor.getService(RegenManager.class);
     this.componentService = accessor.getService(ComponentService.class);
     this.languageService = accessor.getService(LanguageService.class);
@@ -52,6 +56,9 @@ public final class RegenReloadCommand implements Service {
 
       var entries = loader.loadAll();
       regen.reloadEntries(entries);
+
+      var newSettings = settingsLoader.reloadSettings();
+      regen.updateSettings(newSettings);
 
       player.sendMessage(componentService.builder(player, "general.reload", "NotDefined", true).build());
       return 1;
