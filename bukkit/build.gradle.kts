@@ -6,6 +6,7 @@ plugins {
 
 dependencies {
     paperweight.paperDevBundle("1.21.11-R0.1-SNAPSHOT")
+    compileOnly("net.kyori:adventure-text-serializer-ansi:4.26.1")
 
     compileOnly("io.nexstudios:framework-paper:v1.0.2")
     compileOnly("io.nexstudios.itemservice:bukkit:v1.0.0")
